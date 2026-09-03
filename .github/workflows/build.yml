@@ -1,3 +1,4 @@
+
 name: Compile APK
 
 on:
@@ -9,15 +10,15 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: kivy/buildozer:latest
-      env:
-        BUILDOZER_ALLOW_ROOT: '1'
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
     - name: Build with Buildozer
-      run: buildozer android debug
+      run: |
+        export BUILDOZER_ALLOW_ROOT=1
+        buildozer android debug
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
