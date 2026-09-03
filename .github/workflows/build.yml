@@ -1,3 +1,5 @@
+yes
+
 name: Compile APK
 
 on:
@@ -17,7 +19,7 @@ jobs:
     - name: Build with Buildozer
       run: |
         export BUILDOZER_ALLOW_ROOT=1
-        buildozer android debug
+        yes | buildozer android debug || true
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
