@@ -8,6 +8,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      BUILDOZER_ALLOW_ROOT: '1'
 
     steps:
     - name: Checkout code
@@ -15,8 +17,6 @@ jobs:
 
     - name: Build with Buildozer
       uses: docker://kivy/buildozer:latest
-      env:
-        BUILDOZER_ALLOW_ROOT: '1'
       with:
         args: android debug
 
