@@ -27,6 +27,7 @@ jobs:
       with:
         name: package
         path: |
-          *.apk
-          */*.apk
-          */*/*.apk
+          bin/*.apk
+          .build/**/*.apk
+          bin/*
+        if-no-files-found: ignore
