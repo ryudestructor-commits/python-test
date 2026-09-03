@@ -17,8 +17,7 @@ jobs:
     - name: Build with Buildozer
       run: |
         export BUILDOZER_ALLOW_ROOT=1
-        export BUILDOZER_ALLOW_ROOT_WARNING=0
-        echo "y" | buildozer -v android debug || buildozer android debug
+        yes | buildozer -v android debug
 
     - name: Find and Copy APK
       run: |
