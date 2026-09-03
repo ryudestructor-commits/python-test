@@ -17,22 +17,17 @@ jobs:
     - name: Build with Buildozer
       run: |
         export BUILDOZER_ALLOW_ROOT=1
-        buildozer -v android debug || buildozer android debug
+        export BUILDOZER_ALLOW_ROOT_WARNING=0
+        echo "y" | buildozer -v android debug || buildozer android debug
 
-    - name: Ultimate APK Search and Copy
+    - name: Find and Copy APK
       run: |
-        echo "Buscando cualquier archivo APK en todo el sistema..."
-        find / -name "*.apk" 2>/dev/null || true
-        # Copiar cualquier APK encontrado a la raíz del workspace
-        find / -name "*.apk" 2>/dev/null -exec cp {} . \;
+        find . -name "*.apk" -exec cp {} . \;
         ls -la
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: package
-        path: |
-          *.apk
-          */*.apk
-          bin/*.apk
+        path: "*.apk"
         if-no-files-found: ignore
