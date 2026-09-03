@@ -1,149 +1,30 @@
-import random
-import time
-import hashlib
-import getpass
+name: Compile APK
 
-class JuegoEstrategia:
-    def __init__(self):
-        # El mapa es un grafo donde las claves son los lugares y los valores son los caminos conectados
-        self.mapa = {
-            'Base_Aliada': ['Valle', 'Colina'],
-            'Valle': ['Base_Aliada', 'Centro', 'Bosque'],
-            'Colina': ['Base_Aliada', 'Centro', 'Montaña'],
-            'Centro': ['Valle', 'Colina', 'Base_Enemiga'],
-            'Bosque': ['Valle', 'Base_Enemiga'],
-            'Montaña': ['Colina', 'Base_Enemiga'],
-            'Base_Enemiga': ['Centro', 'Bosque', 'Montaña']
-        }
-        
-        # Puntos de victoria que otorga cada nodo al ser capturado
-        self.puntos_nodos = {
-            'Base_Aliada': 0, 'Valle': 10, 'Colina': 10, 
-            'Centro': 30, 'Bosque': 15, 'Montaña': 15, 'Base_Enemiga': 50
-        }
-        
-        # Controladores de cada zona
-        self.propietarios = {nodo: 'Neutral' for nodo in self.mapa}
-        self.propietarios['Base_Aliada'] = 'Jugador'
-        self.propietarios['Base_Enemiga'] = 'IA'
-        
-        # Posiciones actuales de los ejércitos
-        self.pos_jugador = 'Base_Aliada'
-        self.pos_ia = 'Base_Enemiga'
-        
-        self.puntuacion_jugador = 0
-        self.puntuacion_ia = 0
-        self.turnos_maximos = 10
-        self.turno_actual = 1
+on:
+  push:
+    branches: [ main ]
 
-    def mostrar_estado(self):
-        print("\n" + "="*40)
-        print(f"--- TURNO {self.turno_actual} / {self.turnos_maximos} ---")
-        print(f"Puntuación Jugador: {self.puntuacion_jugador} | Puntuación IA: {self.puntuacion_ia}")
-        print(f"Tu posición: {self.pos_jugador} | Posición Enemigo: {self.pos_ia}")
-        print("-" * 40)
-        print("Estado del mapa:")
-        for nodo, prop in self.propietarios.items():
-            print(f" - {nodo} (Valor: {self.puntos_nodos[nodo]} pts) -> Controlado por: {prop}")
-        print("="*40)
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: kivy/buildozer:latest
 
-    def turno_jugador(self):
-        caminos_posibles = self.mapa[self.pos_jugador]
-        print("\nCaminos disponibles para avanzar:")
-        for i, destino in enumerate(caminos_posibles, 1):
-            estado = self.propietarios[destino]
-            print(f"{i}. {destino} (Actual: {estado})")
-            
-        eleccion = 0
-        while eleccion < 1 or eleccion > len(caminos_posibles):
-            try:
-                eleccion = int(input("\nElige el número de tu destino: "))
-            except ValueError:
-                print("Por favor, introduce un número válido.")
-                
-        nuevo_nodo = caminos_posibles[eleccion - 1]
-        self.mover_y_conquistar(nuevo_nodo, 'Jugador')
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-    def turno_ia(self):
-        print("\nTurno de la IA...")
-        time.sleep(1)
-        caminos_posibles = self.mapa[self.pos_ia]
-        opciones_validas = [n for n in caminos_posibles if self.propietarios[n] != 'IA']
-        
-        if opciones_validas:
-            opciones_validas.sort(key=lambda x: self.puntos_nodos[x], reverse=True)
-            nuevo_nodo = opciones_validas[0]
-        else:
-            nuevo_nodo = random.choice(caminos_posibles)
-            
-        print(f"La IA se ha movido por el camino hacia: {nuevo_nodo}")
-        self.mover_y_conquistar(nuevo_nodo, 'IA')
+    - name: Fix container permissions
+      run: |
+        chown -R user:user $GITHUB_WORKSPACE
 
-    def mover_y_conquistar(self, destino, faccion):
-        if faccion == 'Jugador':
-            self.pos_jugador = destino
-        else:
-            self.pos_ia = destino
+    - name: Build with Buildozer
+      run: |
+        export BUILDOZER_ALLOW_ROOT=1
+        buildozer android debug
 
-        propietario_actual = self.propietarios[destino]
-        
-        if propietario_actual != faccion:
-            print(f">>> ¡{faccion} ha conquistado {destino}! (+{self.puntos_nodos[destino]} pts)")
-            self.propietarios[destino] = faccion
-            
-            if faccion == 'Jugador':
-                self.puntuacion_jugador += self.puntos_nodos[destino]
-            else:
-                self.puntuacion_ia += self.puntos_nodos[destino]
-
-    def jugar(self):
-        print("=== BATALLA POR LOS CAMINOS ===")
-        print("Mueve a tus tropas nodo a nodo. Conquista zonas para sumar puntos.")
-        print("Quien tenga más puntos al final de los turnos, gana.\n")
-        
-        while self.turno_actual <= self.turnos_maximos:
-            self.mostrar_estado()
-            
-            self.turno_jugador()
-            self.turno_ia()
-            
-            self.turno_actual += 1
-            
-        self.mostrar_resultado_final()
-
-    def mostrar_resultado_final(self):
-        print("\n" + "*"*40)
-        print("FIN DE LA PARTIDA")
-        print(f"Puntuación final -> Jugador: {self.puntuacion_jugador} | IA: {self.puntuacion_ia}")
-        if self.puntuacion_jugador > self.puntuacion_ia:
-            print("¡VICTORIA! Has dominado el territorio.")
-        elif self.puntuacion_jugador < self.puntuacion_ia:
-            print("DERROTA. La IA ha tomado el control.")
-        else:
-            print("EMPATE TÁCTICO.")
-        print("*"*40)
-
-def verificar_acceso():
-    # Hash SHA-256 correspondiente a "6789"
-    hash_objetivo = "48074900a8947f631be0386fc90a6ea230553755498a44cd6e6f51f47c093a52"
-    intentos = 3
-    
-    while intentos > 0:
-        # getpass oculta los caracteres al escribirlos en la consola
-        password_ingresada = getpass.getpass("Introduce la contraseña de acceso: ")
-        hash_ingresado = hashlib.sha256(password_ingresada.encode()).hexdigest()
-        
-        if hash_ingresado == hash_objetivo:
-            print("Acceso concedido. Iniciando juego...\n")
-            return True
-        else:
-            intentos -= 1
-            print(f"Contraseña incorrecta. Te quedan {intentos} intentos.")
-            
-    print("Acceso denegado. Demasiados intentos fallidos.")
-    return False
-
-if __name__ == "__main__":
-    if verificar_acceso():
-        juego = JuegoEstrategia()
-        juego.jugar()
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: package
+        path: bin/*.apk
